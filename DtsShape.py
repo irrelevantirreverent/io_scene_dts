@@ -235,11 +235,12 @@ class DtsShape(object):
 		return mat
 
 	def verify(self):
+		# TODO: add default_objectstates so this is nicer
 		assert self.detail_levels
 		assert self.subshapes
 		assert len(self.nodes) == len(self.default_translations)
 		assert len(self.nodes) == len(self.default_rotations)
-		assert len(self.objects) == len(self.objectstates)
+		assert len(self.objects) <= len(self.objectstates) # lesser/equal because object states have no default count
 		assert len(self.node_arbitrary_scale_factors) == len(self.node_arbitrary_scale_rots)
 		assert len(self.ground_translations) == len(self.ground_rotations)
 
@@ -546,6 +547,7 @@ class DtsShape(object):
 			self.ground_rotations = [None] * n_groundframe
 
 		# Object states
+
 		self.objectstates = [ObjectState.read(stream) for i in range(n_objectstate)]
 		stream.guard()
 

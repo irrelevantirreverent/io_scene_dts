@@ -656,7 +656,12 @@ def save(operator, context, filepath,
                 if node.armature is not None:
                     continue
 
-                animation_data[frame][node] = node.matrix.decompose()
+                if node.bl_ob is None:
+                    vis = 1.0
+                else:
+                    vis = node.bl_ob.get("vis", 1.0)
+
+                animation_data[frame][node] = node.matrix.decompose() + (vis,)
 
         for index, node in enumerate(shape.nodes):
             if node.armature is not None:
@@ -674,12 +679,14 @@ def save(operator, context, filepath,
 
             base_translation, base_rotation, _ = node.matrix.decompose()
             base_scale = Vector((1.0, 1.0, 1.0))
+            base_object_state = ObjectState(ob.get('vis', 1.0), 0, 0)
 
             fcurves = data.action.fcurves
 
             curves_rotation = array_from_fcurves_rotation(fcurves, ob)
             curves_translation = array_from_fcurves(fcurves, "location", 3)
             curves_scale = array_from_fcurves(fcurves, "scale", 3)
+            curves_vis = array_from_fcurves(fcurves, '["vis"]', 1) # this *requires* double quotes inside
 
             # Decide what matters by presence of f-curves
             if curves_rotation and fcurves_keyframe_in_range(curves_rotation, frame_start, frame_end):
@@ -691,9 +698,12 @@ def save(operator, context, filepath,
             if curves_scale and fcurves_keyframe_in_range(curves_scale, frame_start, frame_end):
                 seq.scaleMatters[index] = True
 
+            if curves_vis and fcurves_keyframe_in_range(curves_vis, frame_start, frame_end):
+                seq.visMatters[index] = True
+
             # Write the data where it matters
             for frame in frame_indices:
-                translation, rotation, scale = animation_data[frame][node]
+                translation, rotation, scale, vis = animation_data[frame][node]
 
                 if seq.translationMatters[index]:
                     if seq.flags & Sequence.Blend:
@@ -707,6 +717,9 @@ def save(operator, context, filepath,
 
                 if seq.scaleMatters[index]:
                     shape.node_aligned_scales.append(scale)
+
+                if seq.visMatters[index]:
+                    shape.objectstates.append(ObjectState(vis, 0, 0)) # may have unintended behavior with blends...?
 
     if debug_report:
         print("Writing debug report")
