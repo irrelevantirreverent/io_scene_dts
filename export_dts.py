@@ -327,7 +327,7 @@ def save_meshes(scene, shape, node_lookup, select_object):
             object = Object(shape.name(name), numMeshes=0, firstMesh=0, node=attach_node)
             object.has_transparency = False
             shape.objects.append(object)
-            shape.objectstates.append(ObjectState(1.0, 0, 0)) # ff56g: search for a37hm
+            shape.default_objectstates.append(ObjectState(bobj.get("vis", 1.0), 0, 0)) # ff56g: search for a37hm
             scene_objects[name] = (object, {})
 
         for slot in bobj.material_slots:
@@ -422,7 +422,7 @@ def save(operator, context, filepath,
 
     # Put objects with transparent materials last
     # Note: If this plugin ever needs to do anything with objectstates,
-    #       that needs to be handled properly. a37hm: earch for ff56g
+    #       that needs to be handled properly. a37hm: search for ff56g
     shape.objects.sort(key=lambda object: object.has_transparency) # TODO: attrgetter
 
     # Sort detail levels
@@ -719,7 +719,8 @@ def save(operator, context, filepath,
                     shape.node_aligned_scales.append(scale)
 
                 if seq.visMatters[index]:
-                    shape.objectstates.append(ObjectState(vis, 0, 0)) # may have unintended behavior with blends...?
+                    # may have unintended behavior with blend animations...?
+                    shape.objectstates.append(ObjectState(vis, frame, 0))
 
     if debug_report:
         print("Writing debug report")
